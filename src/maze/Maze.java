@@ -20,8 +20,7 @@ public class Maze {
     Boolean done = false;
     Random rng;
     Stack<Pair<Integer, Integer>> stack;
-
-
+    List<Pair<Integer, Integer>> borderCells;
     int[][][] matrix;
 
     public Maze(int r, int c, boolean a) {
@@ -33,6 +32,7 @@ public class Maze {
         stack.push(new Pair<>(currentRow, currentCol));
         rng = new Random();
         frames = new LinkedList<>();
+        borderCells = new LinkedList<>();
     }
 
     public Maze(int r, int c) {
@@ -101,13 +101,124 @@ public class Maze {
                 currentCol = stackTop.getValue();
             }
             if(animate)
-                frames.add(generateFrame(currentCol, currentRow));
+                frames.add(generateFrame(currentRow, currentCol));
         }
         setEntryExit();
     }
 
-    public void prim() {
-        throw new NotImplementedException();
+    public void prim() throws IOException {
+        Pair<Integer, Integer> currentCell = new Pair<>(currentRow, currentCol);
+        List<Character> possible = new LinkedList<>();
+        //memberCells.add(currentCell);
+        matrix[currentRow][currentCol][4] = 1;
+        if ((currentCol > 0) && (matrix[currentRow][currentCol - 1][4] == 0)) {
+            // has possible left connection
+            borderCells.add(new Pair<>(currentRow, currentCol - 1));
+        }
+        if ((currentCol < cols - 1) && (matrix[currentRow][currentCol + 1][4] == 0)) {
+            // has possible right connection
+            borderCells.add(new Pair<>(currentRow, currentCol + 1));
+        }
+        if ((currentRow > 0) && (matrix[currentRow - 1][currentCol][4] == 0)) {
+            // has possible up connection
+            borderCells.add(new Pair<>(currentRow - 1, currentCol));
+        }
+        if ((currentRow < rows - 1) && (matrix[currentRow + 1][currentCol][4] == 0)) {
+            // has possible down connection
+            borderCells.add(new Pair<>(currentRow + 1, currentCol));
+        }
+        while(!borderCells.isEmpty()) {
+            // select a random bordercell
+            int borderSelection = rng.nextInt(borderCells.size());
+            List<Pair<Pair<Integer, Integer>, Character>> neighbours = new ArrayList<>();
+            currentRow = borderCells.get(borderSelection).getKey();
+            currentCol = borderCells.get(borderSelection).getValue();
+            if (currentCol > 0) {
+                // has possible left connection
+                // if the cell to the left is already in the maze, add it to list of neighbours
+                if(matrix[currentRow][currentCol - 1][4] == 1) {
+                    neighbours.add(new Pair<>(new Pair<>(currentRow, currentCol - 1), 'R'));
+                }
+                // else, add it to the border cells
+                else {
+                    if(!borderCells.contains(new Pair<>(currentRow, currentCol - 1)))
+                        borderCells.add(new Pair<>(currentRow, currentCol - 1));
+                    //matrix[currentRow][currentCol - 1][4] = 1;
+                }
+            }
+            if (currentCol < cols - 1) {
+                // has possible right connection
+                // if the cell to the right is already in the maze, add it to the list of neighbours
+                if(matrix[currentRow][currentCol + 1][4] == 1) {
+                    neighbours.add(new Pair<>(new Pair<>(currentRow, currentCol + 1), 'L'));
+                }
+                // else, add it to the border cells
+                else {
+                    if(!borderCells.contains(new Pair<>(currentRow, currentCol + 1)))
+                        borderCells.add(new Pair<>(currentRow, currentCol + 1));
+                    //matrix[currentRow][currentCol + 1][4] = 1;
+                }
+            }
+            if (currentRow > 0)  {
+                // has possible up connection
+                // if the cell above is already in the maze, add it to the list of neighbours
+                if(matrix[currentRow - 1][currentCol][4] == 1) {
+                    neighbours.add(new Pair<>(new Pair<>(currentRow - 1, currentCol), 'D'));
+                }
+                // else, add it to the border cells
+                else {
+                    if(!borderCells.contains(new Pair<>(currentRow - 1, currentCol)))
+                        borderCells.add(new Pair<>(currentRow - 1, currentCol));
+                    //matrix[currentRow - 1][currentCol][4] = 1;
+                }
+            }
+            if (currentRow < rows - 1) {
+                // has possible down connection
+                // if the cell below is already in the maze, add it to the list of neighbours
+                if(matrix[currentRow + 1][currentCol][4] == 1) {
+                    neighbours.add(new Pair<>(new Pair<>(currentRow + 1, currentCol), 'U'));
+                }
+                // else, add it to the border cells
+                else {
+                    if(!borderCells.contains(new Pair<>(currentRow + 1, currentCol)))
+                        borderCells.add(new Pair<>(currentRow + 1, currentCol));
+                    //matrix[currentRow + 1][currentCol][4] = 1;
+                }
+            }
+
+            // choose a random neighbour
+            int neighbourSelection = rng.nextInt(neighbours.size());
+            // remove the wall connecting the selected neighbour with the current cell
+            Character direction = neighbours.get(neighbourSelection).getValue();
+            if(direction == 'L') {
+                // mark current borderCell as having right connection, and neighbour as having left connection
+                matrix[currentRow][currentCol][1] = 1;
+                matrix[currentRow][currentCol + 1][0]  = 1;
+            }
+            if(direction == 'R') {
+                // mark current borderCell as having left connection, and neighbour as having right connection
+                matrix[currentRow][currentCol][0] = 1;
+                matrix[currentRow][currentCol - 1][1]  = 1;
+            }
+            if(direction == 'U') {
+                // mark current borderCell as having down connection, and neighbour as having up connection
+                matrix[currentRow][currentCol][3] = 1;
+                matrix[currentRow + 1][currentCol][2]  = 1;
+            }
+            if(direction == 'D') {
+                // mark current borderCell as having up connection, and neighbour as having down connection
+                matrix[currentRow][currentCol][2] = 1;
+                matrix[currentRow - 1][currentCol][3]  = 1;
+            }
+            // mark borderCell as being visited
+            matrix[currentRow][currentCol][4] = 1;
+            // remove borderCell from borderCell list
+            borderCells.remove(borderSelection);
+            // generate frame
+            if(animate)
+                frames.add(generateFrame(currentRow, currentCol));
+        }
+        setEntryExit();
     }
 
     void setEntryExit() throws IOException{
@@ -119,12 +230,12 @@ public class Maze {
         frames.add(generateFrame(-1, -1));
     }
 
-    Image generateFrame(int c, int r) throws IOException {
+    Image generateFrame(int r, int c) throws IOException {
         int cellSize = 5;
         int scaleFactor = 6;
         WritableImage canvas = new WritableImage(cols*cellSize, rows*cellSize);
         PixelWriter writer = canvas.getPixelWriter();
-
+        Pair<Integer, Integer> p;
         for(int i = 0; i < canvas.getWidth(); i++) {
             for(int j = 0; j < canvas.getHeight(); j++) {
                 writer.setColor(i, j, Color.DARKBLUE);
@@ -133,6 +244,7 @@ public class Maze {
         for(int i = 0; i < rows; i++) {
             for(int j = 0; j < cols; j++) {
                 int[] cellData = matrix[i][j];
+                p = new Pair<>(i,j);
                 if(i == r && j == c) {
                     for(int k = 1; k < cellSize-1; k++) {
                         // colour all except the outer 10 pixels of this cell RED
@@ -165,7 +277,38 @@ public class Maze {
                         }
                     }
                 }
-
+                else if(borderCells.contains(p)) {
+                    for(int k = 1; k < cellSize-1; k++) {
+                        // colour all except the outer 10 pixels of this cell GREEN
+                        for(int m = 1; m < cellSize-1; m++) {
+                            writer.setColor(cellSize*i+k, cellSize*j+m, Color.GREEN);
+                        }
+                        if(cellData[0] == 1) {
+                            // if left connection, set leftmost pixels to GREEN
+                            for(int m = 1; m < cellSize-1; m++) {
+                                writer.setColor(cellSize*i+m, cellSize*j, Color.GREEN);
+                            }
+                        }
+                        if(cellData[1] == 1) {
+                            // if right connection, set rightmost pixels to GREEN
+                            for(int m = 1; m < cellSize-1; m++) {
+                                writer.setColor(cellSize*i+m, cellSize*j+(cellSize-1), Color.GREEN);
+                            }
+                        }
+                        if(cellData[2] == 1) {
+                            // if up connection, set topmost pixels to GREEN
+                            for(int m = 1; m < cellSize-1; m++) {
+                                writer.setColor(cellSize*i, cellSize*j+m, Color.GREEN);
+                            }
+                        }
+                        if(cellData[3] == 1) {
+                            // if down connection, set bottommost pixels to GREEN
+                            for(int m = 1; m < cellSize-1; m++) {
+                                writer.setColor(cellSize*i+(cellSize-1), cellSize*j+m, Color.GREEN);
+                            }
+                        }
+                    }
+                }
                 else {
                     for(int k = 1; k < cellSize-1; k++) {
                         // colour all except the outer 10 pixels of this cell white
@@ -234,6 +377,8 @@ public class Maze {
     public List<Image> getFrames() {
         return frames;
     }
+
+
 
 }
 

@@ -29,7 +29,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Main extends Application {
-    static final int fps = 30;
+    static final int fps = 20;
     static final int rows = 20;
     static final int cols = 20;
     MazeMode currentMode = MazeMode.DFS;
@@ -48,8 +48,6 @@ public class Main extends Application {
         root.getChildren().add(canvas);
 
         GraphicsContext gc = canvas.getGraphicsContext2D();
-
-        //doAnimation(gc);
 
         primaryStage.show();
 
