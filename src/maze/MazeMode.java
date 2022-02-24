@@ -2,7 +2,8 @@ package maze;
 
 public enum MazeMode {
     DFS(0),
-    PRIM(1);
+    PRIM(1),
+    COMBO(2);
 
     private int index;
 

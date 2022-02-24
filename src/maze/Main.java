@@ -1,7 +1,6 @@
 package maze;
 
 import javafx.animation.AnimationTimer;
-import javafx.animation.KeyFrame;
 import javafx.application.Application;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
@@ -15,26 +14,22 @@ import javafx.scene.image.WritablePixelFormat;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.*;
-import javafx.util.Duration;
 
 import javax.imageio.ImageIO;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.Timer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Main extends Application {
-    static final int fps = 20;
-    static final int rows = 20;
-    static final int cols = 20;
-    MazeMode currentMode = MazeMode.DFS;
-    Maze maze;
-    List<Image> mazeFrames;
+    private static final int fps = 60;
+    private static final int rows = 20;
+    private static final int cols = 20;
+    private MazeMode currentMode = MazeMode.DFS;
+    private Maze maze;
+    private List<Image> mazeFrames;
 
     @Override
     public void start(Stage primaryStage) throws Exception{
@@ -59,21 +54,20 @@ public class Main extends Application {
                     try {
                         doNewMaze(false);
                         doAnimation(gc);
-
+                        System.out.printf("\nIters: %d", maze.iters);
                         scene.addEventFilter(KeyEvent.KEY_PRESSED, this);
                     } catch(Exception ex) {
                         ex.printStackTrace();
                     }
                 }
-                if(e.getCode() == KeyCode.F6) {
-                    try {
-                        doNewMaze(true);
-                        doAnimation(gc);
-
-                        scene.addEventFilter(KeyEvent.KEY_PRESSED, this);
-                    } catch(Exception ex) {
-                        ex.printStackTrace();
-                    }
+                if(e.getCode() == KeyCode.F6) try {
+                    System.out.printf("\nLoading...");
+                    doNewMaze(true);
+                    doAnimation(gc);
+                    System.out.printf("\nIters: %d", maze.iters);
+                    scene.addEventFilter(KeyEvent.KEY_PRESSED, this);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
                 if(e.getCode() == KeyCode.X) {
                     try {
@@ -130,7 +124,7 @@ public class Main extends Application {
 
     }
 
-    public void doNewMaze(boolean animate) throws Exception{
+    private void doNewMaze(boolean animate) throws Exception{
         maze = new Maze(rows, cols, animate);
         switch(currentMode) {
             case DFS:
@@ -139,11 +133,14 @@ public class Main extends Application {
             case PRIM:
                 maze.prim();
                 break;
+            case COMBO:
+                maze.combo();
+                break;
         }
         mazeFrames = maze.getFrames();
     }
 
-    public void doAnimation(GraphicsContext gc) {
+    private void doAnimation(GraphicsContext gc) {
         AnimatedImage anim = new AnimatedImage(mazeFrames);
         anim.setDuration((double)1/fps);
 
