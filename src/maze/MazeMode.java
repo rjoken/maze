@@ -7,7 +7,7 @@ public enum MazeMode {
 
     private int index;
 
-    private MazeMode(int index) {
+    MazeMode(int index) {
         this.index = index;
     }
 

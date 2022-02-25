@@ -1,13 +1,12 @@
 package maze;
-import java.io.IOException;
 import java.util.*;
 
 import javafx.scene.image.*;
 import javafx.scene.paint.Color;
 import javafx.util.Pair;
 
-public class Maze {
-    private static final int cellSize = 4;
+@SuppressWarnings("unused")
+class Maze {
     int iters;
     private int rows;
     private int cols;
@@ -16,11 +15,16 @@ public class Maze {
     private boolean animate;
     private List<Image> frames;
     private Random rng;
-    private Stack<Pair<Integer, Integer>> stack;
     private List<Pair<Integer, Integer>> borderCells;
     private int[][][] matrix;
 
-    public Maze(int r, int c, boolean a) {
+    /**
+     * Class constructor for Maze.
+     * @param r - Number of rows.
+     * @param c - Number of columns.
+     * @param a - Whether or not the maze should be animated when displaying.
+     */
+    Maze(int r, int c, boolean a) {
         animate = a;
         rows = r;
         cols = c;
@@ -31,24 +35,26 @@ public class Maze {
         iters = 0;
     }
 
-    public Maze(int r, int c) {
+    Maze(int r, int c) {
         this(r, c, false);
     }
 
-    public void dfs() throws IOException {
+    /**
+     * Depth-first search maze generation algorithm
+     */
+    void dfs() {
         currentRow = rng.nextInt(rows - 1);
         currentCol = rng.nextInt(cols - 1);
-        stack = new Stack<>();
+        Stack<Pair<Integer, Integer>> stack = new Stack<>();
         stack.push(new Pair<>(currentRow, currentCol));
         while(!stack.empty()) {
             iters++;
-            //System.out.printf("%d, %d", currentRow, currentCol);
             matrix[currentRow][currentCol][4] = 1; // mark visited
             List<Character> possible = new ArrayList<>();
             if ((currentCol > 0) && (matrix[currentRow][currentCol - 1][4] == 0)) {
-                /** if it is not the first column and the column to the left has not
-                 *  already been visited:
-                 *  has possible left connection
+                /* if it is not the first column and the column to the left has not
+                   already been visited:
+                   has possible left connection
                  */
                 possible.add('L');
             }
@@ -107,7 +113,10 @@ public class Maze {
         setEntryExit();
     }
 
-    public void prim() throws IOException {
+    /**
+     * Maze generation algorithm based on Prim's minimum spanning tree algorithm (unweighted).
+     */
+    void prim() {
         currentRow = rng.nextInt(rows - 1);
         currentCol = rng.nextInt(cols - 1);
         matrix[currentRow][currentCol][4] = 1;
@@ -222,7 +231,10 @@ public class Maze {
         setEntryExit();
     }
 
-    public void combo() throws IOException {
+    /**
+     * Maze generation algorithm using aspects of both DFS and PRIM.
+     */
+    void combo() {
         // start by randomly adding one cell to the list of border cells
         currentRow = rng.nextInt(rows - 1);
         currentCol = rng.nextInt(cols - 1);
@@ -248,9 +260,9 @@ public class Maze {
             List<Character> possible = new ArrayList<>();
             // get possible connections
             if ((currentCol > 0) && (matrix[currentRow][currentCol - 1][4] == 0)) {
-                /** if it is not the first column and the column to the left has not
-                 *  already been visited:
-                 *  has possible left connection
+                /* if it is not the first column and the column to the left has not
+                   already been visited:
+                   has possible left connection
                  */
                 possible.add('L');
             }
@@ -312,7 +324,10 @@ public class Maze {
         setEntryExit();
     }
 
-    private void setEntryExit() throws IOException{
+    /**
+     * Set the entrance and exit points of the maze.
+     */
+    private void setEntryExit() {
         // maze entry
         matrix[0][0][0] = 1;
         // maze exit
@@ -321,15 +336,22 @@ public class Maze {
         frames.add(generateFrame(-1, -1));
     }
 
-    private Image generateFrame(int r, int c) throws IOException {
-
-        int scaleFactor = 4;
+    /**
+     * Returns a single image showing the current state of the maze.
+     * The current cell will be highlighted in red.
+     * @param r - The row of the current cell being explored.
+     * @param c - The column of the current cell being explored.
+     * @return Image
+     */
+    private Image generateFrame(int r, int c) {
+        int cellSize = Main.cellSize;
+        int scaleFactor = Main.scaleFactor;
         WritableImage canvas = new WritableImage(cols*cellSize + (cellSize/2), rows*cellSize + (cellSize/2));
         PixelWriter writer = canvas.getPixelWriter();
         Pair<Integer, Integer> p;
         for(int i = 0; i < canvas.getWidth(); i++) {
             for(int j = 0; j < canvas.getHeight(); j++) {
-                writer.setColor(i, j, Color.DARKBLUE);
+                writer.setColor(i, j, Color.rgb(0,0,255));
             }
         }
         int row = 0;
@@ -451,10 +473,15 @@ public class Maze {
         return resample(canvas, scaleFactor);
     }
 
-    private Image resample(Image input, int scaleFactor) {
+    /**
+     * Takes an image and returns the same image resized based on a given scalar S.
+     * @param input - input image.
+     * @param S - scalar.
+     * @return - Newly scaled image.
+     */
+    private Image resample(Image input, int S) {
         final int W = (int) input.getWidth();
         final int H = (int) input.getHeight();
-        final int S = scaleFactor;
 
         WritableImage output = new WritableImage(
                 W * S,
@@ -478,7 +505,10 @@ public class Maze {
         return output;
     }
 
-    public List<Image> getFrames() {
+    /**
+     * @return - The list of images containing all frames of the maze generation.
+     */
+    List<Image> getFrames() {
         return frames;
     }
 }

@@ -19,20 +19,24 @@ import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Main extends Application {
-    private static final int fps = 60;
-    private static final int rows = 20;
-    private static final int cols = 20;
+    private static int fps = 60;
+    private static int rows = 20;
+    private static int cols = 20;
+    static final int cellSize = 4;
+    static int scaleFactor = 4;
+
     private MazeMode currentMode = MazeMode.DFS;
     private Maze maze;
     private List<Image> mazeFrames;
 
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) {
         primaryStage.setTitle(currentMode.toString());
         doNewMaze(false);
         Group root = new Group();
@@ -46,52 +50,39 @@ public class Main extends Application {
 
         primaryStage.show();
 
-
         EventHandler<KeyEvent> handleKey = new EventHandler<KeyEvent>() {
+            /**
+             * Handles key events.
+             * Pressing F5 will generate a new maze given the selected generation algorithm WITHOUT animation.
+             * Pressing F6 will do the same WITH animation
+             * Pressing 'X' will export the final maze frame as an image file.
+             * Pressing the left and right arrow keys will cycle between maze generation algorithms, changing the selection.
+             * @param e - The KeyEvent to be handled.
+             */
             @Override
             public void handle(KeyEvent e) {
                 if(e.getCode() == KeyCode.F5) {
                     try {
                         doNewMaze(false);
-                        doAnimation(gc);
-                        System.out.printf("\nIters: %d", maze.iters);
+                        doAnimation(gc, mazeFrames);
+                        System.out.printf("\nMaze generated in %d iterations.\n", maze.iters);
                         scene.addEventFilter(KeyEvent.KEY_PRESSED, this);
                     } catch(Exception ex) {
                         ex.printStackTrace();
                     }
                 }
                 if(e.getCode() == KeyCode.F6) try {
-                    System.out.printf("\nLoading...");
+                    System.out.println("\nLoading...");
                     doNewMaze(true);
-                    doAnimation(gc);
-                    System.out.printf("\nIters: %d", maze.iters);
+                    doAnimation(gc, mazeFrames);
+                    System.out.printf("\nMaze generated in %d iterations.\n", maze.iters);
                     scene.addEventFilter(KeyEvent.KEY_PRESSED, this);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
                 if(e.getCode() == KeyCode.X) {
                     try {
-                        if(mazeFrames.size() != 0) {
-                            Image finalImage = mazeFrames.get(mazeFrames.size() - 1);
-                            int width = (int)finalImage.getWidth();
-                            int height = (int)finalImage.getHeight();
-                            PixelReader pr = finalImage.getPixelReader();
-                            byte[] buffer = new byte[width * height * 4];
-                            WritablePixelFormat<ByteBuffer> format = PixelFormat.getByteBgraInstance();
-                            pr.getPixels(0, 0, width, height, format, buffer, 0, width * 4);
-                            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyy-HHmmss");
-                            LocalDateTime now = LocalDateTime.now();
-                            String path = String.format("%s\\mazes\\maze-%s.png", System.getProperty("user.home"), dtf.format(now));
-                            File imageFile = new File(path);
-                            imageFile.getParentFile().mkdirs();
-                            try {
-                                ImageIO.write(SwingFXUtils.fromFXImage(finalImage, null), "png", imageFile);
-                                System.out.printf("Successfully dumped maze image to %s", path);
-                            } catch(IOException ex) {
-                                ex.printStackTrace();
-                            }
-
-                        }
+                        exportImage(mazeFrames);
                     } catch(Exception ex) {
                         ex.printStackTrace();
                     }
@@ -124,7 +115,13 @@ public class Main extends Application {
 
     }
 
-    private void doNewMaze(boolean animate) throws Exception{
+    /**
+     * Creates a new maze and starts generation based on the currently selected
+     * generation algorithm. If "animate" is true, a list of images corresponding
+     * to each step of the maze generation will also be generated.
+     * @param animate - Whether or not the maze generation should be displayed as an animation frame-by-frame
+     */
+    private void doNewMaze(boolean animate) {
         maze = new Maze(rows, cols, animate);
         switch(currentMode) {
             case DFS:
@@ -140,8 +137,14 @@ public class Main extends Application {
         mazeFrames = maze.getFrames();
     }
 
-    private void doAnimation(GraphicsContext gc) {
-        AnimatedImage anim = new AnimatedImage(mazeFrames);
+    /**
+     * Draws each frame in a list of frames to the graphics context (gc) sequentially
+     * a constant "frames per second" value.
+     * @param gc - The graphics context to draw pixels to.
+     * @param frames - The list of images to draw.
+     */
+    private void doAnimation(GraphicsContext gc, List<Image> frames) {
+        AnimatedImage anim = new AnimatedImage(frames);
         anim.setDuration((double)1/fps);
 
         final long startNanoTime = System.nanoTime();
@@ -153,15 +156,84 @@ public class Main extends Application {
                 double t = (currentNanoTime - startNanoTime) / 1000000000.0;
 
                 gc.drawImage( anim.getFrameAtTime(t), 0, 0 );
-                if(anim.getFrameIndexAtTime(t) == mazeFrames.size() - 1) {
+                if(anim.getFrameIndexAtTime(t) == frames.size() - 1) {
                     stop();
                 }
             }
         }.start();
     }
 
+    /**
+     * Exports the last image in a given list of images (frames) as a file in
+     * {home}/mazes/maze-{date}.png.
+     * @param frames - The list of images to export from.
+     */
+    private void exportImage(List<Image> frames) {
+        if(frames.size() != 0) {
+            Image finalImage = frames.get(frames.size() - 1);
+            int width = (int)finalImage.getWidth();
+            int height = (int)finalImage.getHeight();
+            PixelReader pr = finalImage.getPixelReader();
+            byte[] buffer = new byte[width * height * 4];
+            WritablePixelFormat<ByteBuffer> format = PixelFormat.getByteBgraInstance();
+            pr.getPixels(0, 0, width, height, format, buffer, 0, width * 4);
+
+            // get date and time for file name
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("ddMMyy-HHmmss");
+            LocalDateTime now = LocalDateTime.now();
+            String path = String.format("%s\\mazes\\maze-%s.png", System.getProperty("user.home"), dtf.format(now));
+            File imageFile = new File(path);
+            //noinspection ResultOfMethodCallIgnored
+            imageFile.getParentFile().mkdirs();
+
+            // try to write the file. access may be denied etc.
+            try {
+                ImageIO.write(SwingFXUtils.fromFXImage(finalImage, null), "png", imageFile);
+                System.out.printf("Successfully dumped maze image to %s", path);
+            } catch(IOException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+    }
+
+    /**
+     * Prints usage instructions for this program.
+     */
+    private static void showUsage() {
+        System.out.println("Usage: java {ApplicationName} [-h] " +
+                "[--rows n] [--cols n] [--scalefactor n] [--fps n]");
+        System.out.println("Program controls:");
+        System.out.println("F5: Generate and show maze WITHOUT animation.");
+        System.out.println("F6: Generate and show maze WITH animation.");
+        System.out.println("X:  Export maze image to {home directory}/mazes/.");
+        System.out.println("LEFT and RIGHT arrow keys: Cycle between maze generation methods.");
+        System.exit(0);
+    }
 
     public static void main(String[] args) {
+        List<String> cmd = Arrays.asList(args);
+        if(cmd.contains("-h")) {
+            showUsage();
+        }
+        try {
+            if (cmd.contains("--rows")) {
+                cols = Integer.parseInt(args[cmd.indexOf("--rows") + 1]);
+            }
+            if(cmd.contains("--cols")) {
+                rows = Integer.parseInt(args[cmd.indexOf("--cols") + 1]);
+            }
+            if(cmd.contains("--scalefactor")) {
+                scaleFactor = Integer.parseInt(args[cmd.indexOf("--scalefactor") + 1]);
+            }
+            if(cmd.contains("--fps")) {
+                fps = Integer.parseInt(args[cmd.indexOf("--fps") + 1]);
+            }
+        }
+        catch(Exception e) {
+            showUsage();
+        }
+        System.out.println("Run with argument \"-h\" for help.");
         launch(args);
     }
 }
