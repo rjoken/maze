@@ -1,107 +1,90 @@
-import sys, getopt, enum
+import sys, getopt, enum, time
 import numpy as np
 from PIL import Image
-
-class RequiredOptions:
-	def __init__(self, options=[]):
-		self.required_options = options 
-		
-	def add(self, option):
-		if option not in self.required_options:
-			self.required_options.append(option)
-			
-	def resolve(self, option):
-		if option in self.required_options:
-			self.required_options.remove(option)
-			
-	def optionsResolved(self):
-		if len(self.required_options):
-			return False 
-		else:
-			return True
-	
-class CellConnections(enum.IntEnum):
-	NONE	= 0 #0000
-	UP 		= 1	#0001
-	DOWN	= 2	#0010
-	LEFT	= 4	#0100
-	RIGHT = 8	#1000
-	
-class Maze:
-	def __init__(self, rows, cols):
-		self.rows = rows 
-		self.cols = cols
-		self.cells = [0] * int(rows*cols)
-		
-	def get_rows(self):
-		return self.rows
-		
-	def get_cols(self):
-		return self.cols 
-		
-	def get_cell(self, row, col):
-		return self.cells[int(row*self.cols + col)]
-		
-	def get_absolute_index(row, col):
-		return row*self.cols + col
-		
-	def get_row(self, index):
-		return bound(index / self.cols, 0, self.rows)
-		
-	def get_col(self, index):
-		return bound(index % self.cols, 0, self.cols)
-		
-	def get_size(self):
-		return len(self.cells)
-		
-	def set_cell(self, cell, value):
-		self.cells[cell] = value
-		
-	def print_maze(self):
-		col = 0
-		for i in range(len(self.cells)):
-			if self.cells[i] == 0:
-				print('#', end="")
-			else:
-				print(' ', end="")
-			col = col + 1
-			if(col == self.cols):
-				print('\r')
-				col = 0
-
-def usage_and_exit():
-	print("Usage: solve.py -i <inputfile>")
-	sys.exit()
+from helpful import *
+from maze import *
+from solver import *
 	
 def CELL_SIZE():
 	return int(8)
 	
-def bound(n, minimum, maximum):
-	return int(max(minimum, min(maximum, n)))
-
+def create_solved_image(img, path, inputfile, maze, debug):
+	out_img = img.load()
+	while path:
+		cell = path.pop()
+		try:
+			to_cell = path[len(path) - 1]
+		except:
+			break
+		cell_row = maze.get_row(cell) 
+		cell_col = maze.get_col(cell)
+		to_cell_row = maze.get_row(to_cell)
+		to_cell_col = maze.get_col(to_cell)
+		
+		if(cell_row == to_cell_row):
+			# same row: draw horizontal line 
+			leftmost_cell = min(to_cell_col, cell_col)
+			rightmost_cell = max(to_cell_col, cell_col)
+			pixel_x = leftmost_cell * CELL_SIZE() + 2
+			pixel_y = cell_row * CELL_SIZE()
+			dist = (rightmost_cell - leftmost_cell) * CELL_SIZE() + 4
+			if(debug):
+				print("horz", leftmost_cell, rightmost_cell)
+			for x in range(pixel_x, pixel_x + dist):
+				out_img[x, pixel_y + 2] = (255, 0, 0, 255)
+				out_img[x, pixel_y + 3] = (255, 0, 0, 255)
+				out_img[x, pixel_y + 4] = (255, 0, 0, 255)
+				out_img[x, pixel_y + 5] = (255, 0, 0, 255)
+				
+		if(cell_col == to_cell_col):
+			# same col: draw vertical line 
+			topmost_cell = min(to_cell_row, cell_row)
+			bottommost_cell = max(to_cell_row, cell_row)
+			dist = bottommost_cell - topmost_cell
+			pixel_x = cell_col * CELL_SIZE()
+			pixel_y = topmost_cell * CELL_SIZE() + 2
+			dist = (bottommost_cell - topmost_cell) * CELL_SIZE() + 4
+			if(debug):
+				print("vert", topmost_cell, bottommost_cell)
+			for x in range(pixel_y, pixel_y + dist):
+				out_img[pixel_x + 2, x] = (255, 0, 0, 255)
+				out_img[pixel_x + 3, x] = (255, 0, 0, 255)
+				out_img[pixel_x + 4, x] = (255, 0, 0, 255)
+				out_img[pixel_x + 5, x] = (255, 0, 0, 255)
+				
+	img.save(inputfile[:inputfile.rfind(".")] + "-solved.png")
+	
 def main(argv):
-	inputfile = ""
+	debug = False
+	inputfile = "" # file path for input image
 	try:
-		opts, args = getopt.getopt(argv,"hi:", ["ifile="])
+		# possible arguments are -h (help, optional), -d (debug, optional), i- filename (input filename)
+		opts, args = getopt.getopt(argv,"hdi:", ["ifile="])
 	except getopt.GetoptError:
 		usage_and_exit()
 		
+	# the input file is a required command-line argument
 	required_options = RequiredOptions([ 'ifile' ])
 	
 	for opt, arg in opts:
 		if opt in ("-h"):
 			usage_and_exit()
+		if opt in ("-d"):
+			debug = True
 		elif opt in ("-i", "--ifile"):
 			inputfile = arg
+			# mark the required option 'ifile' as resolved
 			required_options.resolve('ifile')
 
 	if not required_options.optionsResolved():
+		# if not all of the required command-line arguments are resolved
 		usage_and_exit()
 	
 	try:
-		with Image.open(inputfile) as img:
-			img.load()
+		# try to open the specified file
+		img = Image.open(inputfile)
 	except FileNotFoundError as err:
+		# if it fails, it probably doesnt exist (typo?)
 		print(str(err))
 		usage_and_exit()
 		
@@ -110,31 +93,73 @@ def main(argv):
 	cols = img.width / CELL_SIZE()
 	maze = Maze(rows, cols)
 	
+	# loop over each cell in the maze
 	for i in range(maze.get_size()):
 		row = maze.get_row(i)
 		col = maze.get_col(i)
 		pixel_x = col * CELL_SIZE()
 		pixel_y = row * CELL_SIZE()
-		#print(img.getpixel((pixel_x, pixel_y)))
+		# if the top-left pixel for the cell currently traversed is NOT blue, we have a path
+		# figure out in which directions we can traverse from this cell
 		if(img.getpixel((pixel_x, pixel_y)) != (0, 0, 255, 255)):
 			if(img.getpixel((pixel_x, bound(pixel_y + CELL_SIZE(), 0, img.height - 1))) == (255, 255, 255, 255)):
-				#connection above
+				# connection above
 				n = maze.get_cell(row, col) + CellConnections.UP
 				maze.set_cell(i, n)
 			if(img.getpixel((pixel_x, bound(pixel_y - CELL_SIZE(), 0, img.height - 1))) == (255, 255, 255, 255)):
-				#connection below
+				# connection below
 				n = maze.get_cell(row, col) + CellConnections.DOWN 
 				maze.set_cell(i, n)
 			if(img.getpixel((bound(pixel_x - CELL_SIZE(), 0, img.width - 1), pixel_y)) == (255, 255, 255, 255)):
-				#connection left 
+				# connection left 
 				n = maze.get_cell(row, col) + CellConnections.LEFT 
 				maze.set_cell(i, n)
 			if(img.getpixel((bound(pixel_x + CELL_SIZE(), 0, img.width - 1), pixel_y)) == (255, 255, 255, 255)):
-				#connection left 
-				n = maze.get_cell(row, col) + CellConnections.LEFT 
+				# connection right 
+				n = maze.get_cell(row, col) + CellConnections.RIGHT 
 				maze.set_cell(i, n)
+			if(row == 0 and col == 1):
+				# start cell
+				n = maze.get_cell(row, col) + CellConnections.START - CellConnections.UP
+				maze.set_cell(i, n)
+			if(row == rows-1 and col == cols-2):
+				# end cell 
+				n = maze.get_cell(row, col) + CellConnections.END - CellConnections.DOWN
+				maze.set_cell(i, n)
+		else:
+			# if it is blue, we have a wall
+			maze.set_cell(i, CellConnections.WALL)
 				
+	print("Finding maze junctions...")
+	time1 = time.time()
+	maze.calc_nodes()
+	time2 = time.time()
+	time_diff = time2 - time1
+	print("Done in % f seconds\n" % time_diff)
+	
+	print("Calculating connections between junctions...")
+	time1 = time.time()
+	maze.calc_connections()
+	time2 = time.time()
+	time_diff = time2 - time1 
+	print("Done in % f seconds\n" % time_diff)
+	
+	print("Dead ends: % s\n" % str(maze.get_dead_ends()))
+	
 	maze.print_maze()
+	
+	dijkstra_path = dijkstra(maze, debug)
+	print("\nDijkstra path: % s\n" % str(dijkstra_path))
+	
+	if(debug):
+		maze.print_connections()
+		
+	print("Creating solved image...")
+	time1 = time.time()
+	create_solved_image(img, dijkstra_path, inputfile, maze, debug)
+	time2 = time.time()
+	time_diff = time2 - time1
+	print("Done in % f seconds\n" % time_diff)
 	
 if __name__ == "__main__":
 	main(sys.argv[1:])
