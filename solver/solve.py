@@ -148,8 +148,13 @@ def main(argv):
 	
 	maze.print_maze()
 	
+	print("\nCalculating best path...")
+	time1 = time.time()
 	dijkstra_path = dijkstra(maze, debug)
-	print("\nDijkstra path: % s\n" % str(dijkstra_path))
+	time2 = time.time()
+	time_diff = time2 - time1
+	print("Done in % f seconds\n" % time_diff)
+	print("Dijkstra path: % s\n" % str(dijkstra_path))
 	
 	if(debug):
 		maze.print_connections()
