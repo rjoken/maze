@@ -201,21 +201,17 @@ public class Main extends Application {
      * Prints usage instructions for this program.
      */
     private static void showUsage() {
-        System.out.println("Usage: java {ApplicationName} [-h] " +
+        System.out.println("Usage: java {ApplicationName} " +
                 "[--rows n] [--cols n] [--scalefactor n] [--fps n]");
         System.out.println("Program controls:");
         System.out.println("F5: Generate and show maze WITHOUT animation.");
         System.out.println("F6: Generate and show maze WITH animation.");
         System.out.println("X:  Export maze image to {home directory}/mazes/.");
         System.out.println("LEFT and RIGHT arrow keys: Cycle between maze generation methods.");
-        System.exit(0);
     }
 
     public static void main(String[] args) {
         List<String> cmd = Arrays.asList(args);
-        if(cmd.contains("-h")) {
-            showUsage();
-        }
         try {
             if (cmd.contains("--rows")) {
                 cols = Integer.parseInt(args[cmd.indexOf("--rows") + 1]);
@@ -232,8 +228,9 @@ public class Main extends Application {
         }
         catch(Exception e) {
             showUsage();
+            System.exit(0);
         }
-        System.out.println("Run with argument \"-h\" for help.");
+        showUsage();
         launch(args);
     }
 }
