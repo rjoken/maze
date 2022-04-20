@@ -27,11 +27,13 @@ class Maze:
 		self.cols = cols
 		# cool to keep track of
 		self.dead_ends = 0 
+		self.junctions = 0
 		# stores the list of all cells in the maze as a value corresponding to CellConnections
 		self.cells = [0] * int(rows*cols) 
 		# 'nodes' stores all of the cells which act as the start, end, dead ends, or junctions
 		# basically, cells which are significant. junctions are significant because a decision has to be made
 		self.nodes = []
+		self.junction_nodes = []
 		
 	def get_node_array_index(self, index):
 		# returns the position of a node in the array self.nodes[]
@@ -47,6 +49,13 @@ class Maze:
 			if(self.nodes[i].index == index):
 				return self.nodes[i]
 		return None
+		
+	def get_junction_node_array_index(self, index):
+		# returns the position of a node in the array self.junction_nodes[]
+		for i in range(len(self.junction_nodes)):
+			if(self.junction_nodes[i].index == index):
+				return i
+		return -1	
 		
 	def get_rows(self):
 		# gets the number of rows, but i'm not implementing encapsulation anyway
@@ -100,10 +109,28 @@ class Maze:
 		# get the number of dead ends, which we count
 		return self.dead_ends
 		
+	def get_junctions(self):
+		# get number of junctions (3+ connections)
+		return self.junctions
+		
+	def get_nodes(self):
+		# gets the number of nodes
+		return len(self.nodes)
+		
+	def get_traversible_cells(self):
+		# gets the number of non-wall cells 
+		count = 0
+		for i in range(len(self.cells)):
+			if(self.cells[i] & CellConnections.WALL == 0):
+				count = count + 1
+		return count
+		
 	def print_maze(self):
 		col = 0
 		for i in range(len(self.cells)):
-			if(self.get_node_array_index(i) != -1):
+			if(self.get_junction_node_array_index(i) != -1):
+				print("X", end="")
+			elif(self.get_node_array_index(i) != -1):
 				print("O", end="")
 			elif self.cells[i] == CellConnections.WALL:
 				print("#", end="")
@@ -128,15 +155,23 @@ class Maze:
 			# i.e. there is both a horizontal and vertical connection 
 			
 			if n not in self.nodes:
-				# IT WOULD BE NICE IF PYTHON ALLOWED ME TO MAKE THIS MORE READABLE BUT SPLITTING LINES, BUT NO CIGAR
-				# if (in order) start cell, end cell, up & left, up & right, down & left, down & right
-				if ((curr_cell & CellConnections.START != 0) or (curr_cell & CellConnections.END != 0) or (curr_cell & CellConnections.UP != 0 and curr_cell & CellConnections.LEFT != 0) or (curr_cell & CellConnections.UP != 0 and curr_cell & CellConnections.RIGHT != 0) or (curr_cell & CellConnections.DOWN != 0 and curr_cell & CellConnections.LEFT != 0) or (curr_cell & CellConnections.DOWN != 0 and curr_cell & CellConnections.RIGHT != 0)):
+				# if 3 or more connections, considered to be a "junction"
+				if ((curr_cell & CellConnections.START == 0) and (curr_cell & CellConnections.END == 0) and (curr_cell & CellConnections.WALL == 0) and (hamming_weight(curr_cell) >= 3)):
+					self.junctions = self.junctions + 1
 					self.nodes.append(n)
-					
+					self.junction_nodes.append(n)
+
+				# IT WOULD BE NICE IF PYTHON ALLOWED ME TO MAKE THIS MORE READABLE BY SPLITTING LINES, BUT NO CIGAR
+				# if (in order) start cell, end cell, up & left, up & right, down & left, down & right
+				elif ((curr_cell & CellConnections.START != 0) or (curr_cell & CellConnections.END != 0) or (curr_cell & CellConnections.UP != 0 and curr_cell & CellConnections.LEFT != 0) or (curr_cell & CellConnections.UP != 0 and curr_cell & CellConnections.RIGHT != 0) or (curr_cell & CellConnections.DOWN != 0 and curr_cell & CellConnections.LEFT != 0) or (curr_cell & CellConnections.DOWN != 0 and curr_cell & CellConnections.RIGHT != 0)):
+					self.nodes.append(n)
+				
 				# if DEAD END (only one connection)
 				elif ((curr_cell & CellConnections.START == 0) and (curr_cell & CellConnections.END == 0) and (curr_cell & CellConnections.WALL == 0) and (hamming_weight(curr_cell) == 1)):
 					self.dead_ends = self.dead_ends + 1
 					self.nodes.append(n)
+				
+				
 				
 	def calc_connections(self):
 		for n in self.nodes:

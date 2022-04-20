@@ -56,10 +56,12 @@ def create_solved_image(img, path, inputfile, maze, debug):
 	
 def main(argv):
 	debug = False
+	output = False
 	inputfile = "" # file path for input image
+	outputfile = "" # file path for statistical output
 	try:
 		# possible arguments are -h (help, optional), -d (debug, optional), i- filename (input filename)
-		opts, args = getopt.getopt(argv,"hdi:", ["ifile="])
+		opts, args = getopt.getopt(argv,"hdi:o:", ["ifile=", "output="])
 	except getopt.GetoptError:
 		usage_and_exit()
 		
@@ -71,6 +73,9 @@ def main(argv):
 			usage_and_exit()
 		if opt in ("-d"):
 			debug = True
+		if opt in ("-o", "--output"):
+			outputfile = arg 
+			output = True
 		elif opt in ("-i", "--ifile"):
 			inputfile = arg
 			# mark the required option 'ifile' as resolved
@@ -93,6 +98,15 @@ def main(argv):
 	cols = img.width / CELL_SIZE()
 	maze = Maze(rows, cols)
 	
+	# create output file for statistics to be save if specified
+	if(output):
+		outfile = open(outputfile, "a")
+		#outfile.write("Time to generate maze object,Time to find maze junctions,Time to calculate connections,Traversible cells,Nodes,Dead ends,Junctions,Time to calc best path,Time to create image,Total time\n")
+	
+	time_total_start = time.time()
+	
+	print("Generating maze object...")
+	time1 = time.time()
 	# loop over each cell in the maze
 	for i in range(maze.get_size()):
 		row = maze.get_row(i)
@@ -129,13 +143,20 @@ def main(argv):
 		else:
 			# if it is blue, we have a wall
 			maze.set_cell(i, CellConnections.WALL)
-				
+	time2 = time.time()
+	time_diff = time2 - time1 
+	print("Done in % f seconds\n" % time_diff)
+	if(output):
+		outfile.write(str(time_diff) + ",")
+		
 	print("Finding maze junctions...")
 	time1 = time.time()
 	maze.calc_nodes()
 	time2 = time.time()
 	time_diff = time2 - time1
 	print("Done in % f seconds\n" % time_diff)
+	if(output):
+		outfile.write(str(time_diff) + ",")
 	
 	print("Calculating connections between junctions...")
 	time1 = time.time()
@@ -143,10 +164,24 @@ def main(argv):
 	time2 = time.time()
 	time_diff = time2 - time1 
 	print("Done in % f seconds\n" % time_diff)
+	if(output):
+		outfile.write(str(time_diff) + ",")
 	
+	print("Traversible cells: % s\n" % str(maze.get_traversible_cells()))
+	if(output):
+		outfile.write(str(maze.get_traversible_cells()) + ",")
+	print("Nodes: % s\n" % str(maze.get_nodes()))
+	if(output):
+		outfile.write(str(maze.get_nodes()) + ",")
 	print("Dead ends: % s\n" % str(maze.get_dead_ends()))
+	if(output):
+		outfile.write(str(maze.get_dead_ends()) + ",")
+	print("Junctions: % s\n" % str(maze.get_junctions()))
+	if(output):
+		outfile.write(str(maze.get_junctions()) + ",")
 	
-	maze.print_maze()
+	if(debug):
+		maze.print_maze()
 	
 	print("\nCalculating best path...")
 	time1 = time.time()
@@ -154,6 +189,8 @@ def main(argv):
 	time2 = time.time()
 	time_diff = time2 - time1
 	print("Done in % f seconds\n" % time_diff)
+	if(output):
+		outfile.write(str(time_diff) + ",")
 	print("Dijkstra path: % s\n" % str(dijkstra_path))
 	
 	if(debug):
@@ -165,6 +202,15 @@ def main(argv):
 	time2 = time.time()
 	time_diff = time2 - time1
 	print("Done in % f seconds\n" % time_diff)
+	if(output):
+		outfile.write(str(time_diff) + ",")
+	
+	time_total_end = time.time()
+	time_total_diff = time_total_end - time_total_start
+	print("Total time: % f seconds\n" % time_total_diff)
+	if(output):
+		outfile.write(str(time_total_diff) + "\n")
+		outfile.close()
 	
 if __name__ == "__main__":
 	main(sys.argv[1:])

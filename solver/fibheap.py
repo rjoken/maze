@@ -22,9 +22,7 @@ THE SOFTWARE.
 
 import math
 
-
 class FibonacciHeap:
-
     # internal node class
     class Node:
         def __init__(self, key, value):
