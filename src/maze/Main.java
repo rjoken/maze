@@ -18,6 +18,7 @@ import javafx.stage.*;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.io.IOException;
+import java.lang.Math;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,7 @@ public class Main extends Application {
     static final int cellSize = 4;
     static int scaleFactor = 4;
 
-    private MazeMode currentMode = MazeMode.DFS;
+    private MazeMode currentMode = MazeMode.BACKTRACK;
     private Maze maze;
     private List<Image> mazeFrames;
 
@@ -124,7 +125,7 @@ public class Main extends Application {
     private void doNewMaze(boolean animate) {
         maze = new Maze(rows, cols, animate);
         switch(currentMode) {
-            case DFS:
+            case BACKTRACK:
                 maze.dfs();
                 break;
             case PRIM:
@@ -132,6 +133,12 @@ public class Main extends Application {
                 break;
             case COMBO:
                 maze.combo();
+                break;
+            case BTREE:
+                maze.btree();
+                break;
+            case ALDOUSBRODER:
+                maze.ab();
                 break;
         }
         mazeFrames = maze.getFrames();
@@ -223,10 +230,11 @@ public class Main extends Application {
                 scaleFactor = Integer.parseInt(args[cmd.indexOf("--scalefactor") + 1]);
             }
             if(cmd.contains("--fps")) {
-                fps = Integer.parseInt(args[cmd.indexOf("--fps") + 1]);
+                fps = Math.min(Integer.parseInt(args[cmd.indexOf("--fps") + 1]), 60);
             }
         }
         catch(Exception e) {
+            System.out.println("Your command-line arguments were invalid. Try again.");
             showUsage();
             System.exit(0);
         }

@@ -16,6 +16,7 @@ class Maze {
     private List<Image> frames;
     private Random rng;
     private List<Pair<Integer, Integer>> borderCells;
+    Stack<Pair<Integer, Integer>> stack;
     private int[][][] matrix;
 
     /**
@@ -32,6 +33,7 @@ class Maze {
         rng = new Random();
         frames = new LinkedList<>();
         borderCells = new LinkedList<>();
+        stack = new Stack<>();
         iters = 0;
     }
 
@@ -40,12 +42,12 @@ class Maze {
     }
 
     /**
-     * Depth-first search maze generation algorithm
+     * Depth-first search maze generation algorithm (recursive backtracking)
      */
     void dfs() {
+        iters++;
         currentRow = rng.nextInt(rows - 1);
         currentCol = rng.nextInt(cols - 1);
-        Stack<Pair<Integer, Integer>> stack = new Stack<>();
         stack.push(new Pair<>(currentRow, currentCol));
         while(!stack.empty()) {
             iters++;
@@ -72,7 +74,6 @@ class Maze {
             }
             if (!possible.isEmpty()) {
                 // if there are possible paths from this cell
-                stack.push(new Pair<>(currentRow, currentCol));
                 int selection = rng.nextInt(possible.size());
                 if (possible.get(selection) == 'L') {
                     // mark cell as having left connection
@@ -102,6 +103,7 @@ class Maze {
                     currentRow++;
                     matrix[currentRow][currentCol][2] = 1;
                 }
+                stack.push(new Pair<>(currentRow, currentCol));
             } else {
                 Pair<Integer, Integer> stackTop = stack.pop();
                 currentRow = stackTop.getKey();
@@ -117,6 +119,7 @@ class Maze {
      * Maze generation algorithm based on Prim's minimum spanning tree algorithm (unweighted).
      */
     void prim() {
+        iters++;
         currentRow = rng.nextInt(rows - 1);
         currentCol = rng.nextInt(cols - 1);
         matrix[currentRow][currentCol][4] = 1;
@@ -235,6 +238,7 @@ class Maze {
      * Maze generation algorithm using aspects of both DFS and PRIM.
      */
     void combo() {
+        iters++;
         // start by randomly adding one cell to the list of border cells
         currentRow = rng.nextInt(rows - 1);
         currentCol = rng.nextInt(cols - 1);
@@ -325,13 +329,170 @@ class Maze {
     }
 
     /**
+     * Maze generation algorithm using a binary tree.
+     */
+    void btree() {
+        List<Pair<Integer,Integer>> unvisitedCells = new LinkedList<>();
+        for(int i = 0; i < rows; i++) {
+            for(int j = 0; j < cols; j++) {
+                unvisitedCells.add(new Pair<>(i, j));
+            }
+        }
+        while(!unvisitedCells.isEmpty()) {
+            iters++;
+            // randomly select a cell
+            int cellSelection = rng.nextInt(unvisitedCells.size());
+            currentRow = unvisitedCells.get(cellSelection).getKey();
+            currentCol = unvisitedCells.get(cellSelection).getValue();
+            // mark as visited
+            matrix[currentRow][currentCol][4] = 1;
+            unvisitedCells.remove(cellSelection);
+            List<Character> possible = new ArrayList<>();
+            if (currentCol < cols - 1) {
+                possible.add('R');
+            }
+            if (currentRow > 0) {
+                possible.add('U');
+            }
+            if(!possible.isEmpty()) {
+                int selection = rng.nextInt(possible.size());
+                if (possible.get(selection) == 'R') {
+                    // mark cell as having right connection
+                    matrix[currentRow][currentCol][1] = 1;
+                    // mark left connected cell as having left connection
+                    currentCol++;
+                    matrix[currentRow][currentCol][0] = 1;
+                }
+                if (possible.get(selection) == 'U') {
+                    // mark cell as having up connection
+                    matrix[currentRow][currentCol][2] = 1;
+                    // mark down connected cell as having down connection
+                    currentRow--;
+                    matrix[currentRow][currentCol][3] = 1;
+                }
+            }
+            if(animate) {
+                frames.add(generateFrame(currentRow, currentCol));
+            }
+        }
+        setEntryExit();
+    }
+
+    /**
+     * Maze generation based on the Aldous-Broder algorithm (random walk)
+     */
+    void ab() {
+        currentRow = rng.nextInt(rows);
+        currentCol = rng.nextInt(cols);
+        matrix[currentRow][currentCol][4] = 1;
+        while(!allCellsVisited(matrix)) {
+            iters++;
+            List<Character> possible = new ArrayList<>();
+            if (currentCol > 0) {
+                // has possible left connection
+                possible.add('L');
+            }
+            if (currentCol < cols - 1) {
+                // has possible right connection
+                possible.add('R');
+            }
+            if (currentRow > 0) {
+                // has possible up connection
+                possible.add('U');
+            }
+            if (currentRow < rows - 1) {
+                // has possible down connection
+                possible.add('D');
+            }
+            if (!possible.isEmpty()) {
+                // if there are possible paths from this cell, select one
+                int selection = rng.nextInt(possible.size());
+                if (possible.get(selection) == 'L') {
+                    // if the left cell is unvisited, connect
+                    if(matrix[currentRow][currentCol - 1][4] == 0) {
+                        // mark cell as having left connection
+                        matrix[currentRow][currentCol][0] = 1;
+                        // mark left connected cell as having right connection
+                        currentCol--;
+                        matrix[currentRow][currentCol][1] = 1;
+                    }
+                    else {
+                        currentCol--;
+                    }
+                }
+                if (possible.get(selection) == 'R') {
+                    // if the right cell is unvisited, connect
+                    if(matrix[currentRow][currentCol + 1][4] == 0) {
+                        // mark cell as having right connection
+                        matrix[currentRow][currentCol][1] = 1;
+                        // mark right connected cell as having left connection
+                        currentCol++;
+                        matrix[currentRow][currentCol][0] = 1;
+                    }
+                    else {
+                        currentCol++;
+                    }
+                }
+                if (possible.get(selection) == 'U') {
+                    // if the above cell is unvisited, connect
+                    if(matrix[currentRow - 1][currentCol][4] == 0) {
+                        // mark cell as having up connection
+                        matrix[currentRow][currentCol][2] = 1;
+                        // mark up connected cell as having down connection
+                        currentRow--;
+                        matrix[currentRow][currentCol][3] = 1;
+                    }
+                    else {
+                        currentRow--;
+                    }
+                }
+                if (possible.get(selection) == 'D') {
+                    // if the below cell is unvisited, connect
+                    if(matrix[currentRow + 1][currentCol][4] == 0) {
+                        // mark cell as having down connection
+                        matrix[currentRow][currentCol][3] = 1;
+                        // mark down connected cell as having up connection
+                        currentRow++;
+                        matrix[currentRow][currentCol][2] = 1;
+                    }
+                    else {
+                        currentRow++;
+                    }
+                }
+                matrix[currentRow][currentCol][4] = 1;
+            }
+            if(animate) {
+                frames.add(generateFrame(currentRow, currentCol));
+            }
+        }
+        setEntryExit();
+    }
+
+    /**
+     * Returns true if all cells in the 3d array 'maze' have been visited,
+     * false otherwise.
+     * @param maze - the maze array to evaluate
+     * @return boolean
+     */
+    private boolean allCellsVisited(int maze[][][]) {
+        for(int i = 0; i < rows; i++) {
+            for(int j = 0; j < cols; j++) {
+                if(maze[i][j][4] == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Set the entrance and exit points of the maze.
      */
     private void setEntryExit() {
         // maze entry
-        matrix[0][0][0] = 1;
+        matrix[0][0][2] = 1;
         // maze exit
-        matrix[rows - 1][cols - 1][1] = 1;
+        matrix[rows - 1][cols - 1][3] = 1;
 
         frames.add(generateFrame(-1, -1));
     }
@@ -354,108 +515,108 @@ class Maze {
                 writer.setColor(i, j, Color.rgb(0,0,255));
             }
         }
-        int row = 0;
-        int col = 0;
-        for(int i = 0; i < rows * cols; i++, col++) {
-            if(col == cols) {
-                col = 0;
-                row = row + 1;
-            }
-            int[] cellData = matrix[row][col];
-            p = new Pair<>(row,col);
-            if(row == r && col == c) {
-                for(int k = 1; k < cellSize-1; k++) {
-                    // colour all except the outer 10 pixels of this cell RED
-                    for(int m = 1; m < cellSize-1; m++) {
-                        writer.setColor(cellSize*row+k+1, cellSize*col+m+1, Color.RED);
-                    }
-                    if(cellData[0] == 1) {
-                        // if left connection, set leftmost pixels to RED
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+m+1, cellSize*col+1, Color.RED);
+        for(int row = 0; row < rows; row++) {
+            for(int col = 0; col < cols; col++) {
+                int[] cellData = matrix[row][col];
+                p = new Pair<>(row, col);
+                if (row == r && col == c) {
+                    for (int k = 1; k < cellSize - 1; k++) {
+                        // colour all except the outer 10 pixels of this cell RED
+                        for (int m = 1; m < cellSize - 1; m++) {
+                            writer.setColor(cellSize * col + k + 1, cellSize * row + m + 1, Color.RED);
                         }
-                    }
-                    if(cellData[1] == 1) {
-                        // if right connection, set rightmost pixels to RED
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+m+1, cellSize*col+(cellSize-1)+1, Color.RED);
+
+                        if (cellData[0] == 1) {
+                            // if left connection, set leftmost pixels to RED
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + 1, cellSize * row + m + 1, Color.RED);
+                            }
                         }
-                    }
-                    if(cellData[2] == 1) {
-                        // if up connection, set topmost pixels to RED
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+1, cellSize*col+m+1, Color.RED);
+                        if (cellData[1] == 1) {
+                            // if right connection, set rightmost pixels to RED
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + (cellSize - 1) + 1, cellSize * row + m + 1, Color.RED);
+                            }
                         }
-                    }
-                    if(cellData[3] == 1) {
-                        // if down connection, set bottommost pixels to RED
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+(cellSize-1), cellSize*col+m, Color.RED);
+                        if (cellData[2] == 1) {
+                            // if up connection, set topmost pixels to RED
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + 1, Color.RED);
+                            }
                         }
-                    }
-                }
-            }
-            else if(borderCells.contains(p)) {
-                for(int k = 1; k < cellSize-1; k++) {
-                    // colour all except the outer 10 pixels of this cell GREEN
-                    for(int m = 1; m < cellSize-1; m++) {
-                        writer.setColor(cellSize*row+k+1, cellSize*col+m+1, Color.GREEN);
-                    }
-                    if(cellData[0] == 1) {
-                        // if left connection, set leftmost pixels to GREEN
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+m+1, cellSize*col+1, Color.GREEN);
+                        if (cellData[3] == 1) {
+                            // if down connection, set bottommost pixels to RED
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + (cellSize - 1) + 1, Color.RED);
+                            }
                         }
+
                     }
-                    if(cellData[1] == 1) {
-                        // if right connection, set rightmost pixels to GREEN
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+m+1, cellSize*col+(cellSize-1)+1, Color.GREEN);
+                } else if (borderCells.contains(p) || stack.contains(p)) {
+                    for (int k = 1; k < cellSize - 1; k++) {
+                        // colour all except the outer 10 pixels of this cell GREEN
+                        for (int m = 1; m < cellSize - 1; m++) {
+                            writer.setColor(cellSize * col + k + 1, cellSize * row + m + 1, Color.GREEN);
                         }
-                    }
-                    if(cellData[2] == 1) {
-                        // if up connection, set topmost pixels to GREEN
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+1, cellSize*col+m+1, Color.GREEN);
+
+                        if (cellData[0] == 1) {
+                            // if left connection, set leftmost pixels to GREEN
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + 1, cellSize * row + m + 1, Color.GREEN);
+                            }
                         }
-                    }
-                    if(cellData[3] == 1) {
-                        // if down connection, set bottommost pixels to GREEN
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+(cellSize-1)+1, cellSize*col+m+1, Color.GREEN);
+                        if (cellData[1] == 1) {
+                            // if right connection, set rightmost pixels to GREEN
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + (cellSize - 1) + 1, cellSize * row + m + 1, Color.GREEN);
+                            }
                         }
-                    }
-                }
-            }
-            else {
-                for(int k = 1; k < cellSize-1; k++) {
-                    // colour all except the outer 10 pixels of this cell white
-                    for(int m = 1; m < cellSize-1; m++) {
-                        writer.setColor(cellSize*row+k+1, cellSize*col+m+1, Color.WHITE);
-                    }
-                    if(cellData[0] == 1) {
-                        // if left connection, set leftmost pixels to white
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+m+1, cellSize*col+1, Color.WHITE);
+                        if (cellData[2] == 1) {
+                            // if up connection, set topmost pixels to GREEN
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + 1, Color.GREEN);
+                            }
                         }
-                    }
-                    if(cellData[1] == 1) {
-                        // if right connection, set rightmost pixels to white
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+m+1, cellSize*col+(cellSize-1)+1, Color.WHITE);
+                        if (cellData[3] == 1) {
+                            // if down connection, set bottommost pixels to GREEN
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + (cellSize - 1) + 1, Color.GREEN);
+                            }
                         }
+
                     }
-                    if(cellData[2] == 1) {
-                        // if up connection, set topmost pixels to white
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+1, cellSize*col+m+1, Color.WHITE);
+                } else {
+                    for (int k = 1; k < cellSize - 1; k++) {
+                        // colour all except the outer 10 pixels of this cell WHITE
+                        for (int m = 1; m < cellSize - 1; m++) {
+                            writer.setColor(cellSize * col + k + 1, cellSize * row + m + 1, Color.WHITE);
                         }
-                    }
-                    if(cellData[3] == 1) {
-                        // if down connection, set bottommost pixels to white
-                        for(int m = 1; m < cellSize-1; m++) {
-                            writer.setColor(cellSize*row+(cellSize-1)+1, cellSize*col+m+1, Color.WHITE);
+
+                        if (cellData[0] == 1) {
+                            // if left connection, set leftmost pixels to white
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + 1, cellSize * row + m + 1, Color.WHITE);
+                            }
                         }
+                        if (cellData[1] == 1) {
+                            // if right connection, set rightmost pixels to white
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + (cellSize - 1) + 1, cellSize * row + m + 1, Color.WHITE);
+                            }
+                        }
+                        if (cellData[2] == 1) {
+                            // if up connection, set topmost pixels to white
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + 1, Color.WHITE);
+                            }
+                        }
+                        if (cellData[3] == 1) {
+                            // if down connection, set bottommost pixels to white
+                            for (int m = 1; m < cellSize - 1; m++) {
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + (cellSize - 1) + 1, Color.WHITE);
+                            }
+                        }
+
                     }
                 }
             }

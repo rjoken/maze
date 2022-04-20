@@ -1,9 +1,11 @@
 package maze;
 
 public enum MazeMode {
-    DFS(0),
+    BACKTRACK(0),
     PRIM(1),
-    COMBO(2);
+    COMBO(2),
+    BTREE(3),
+    ALDOUSBRODER(4);
 
     private int index;
 
