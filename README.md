@@ -21,7 +21,7 @@ The Java executable supports a variety of runtime arguments:
 - `--rows [n]`: The number of rows for maze generation. Default is 20.
 - `--cols [n]`: The number of columns for maze generation. Default is 20.
 - `--fps [n]`: The speed at which the maze generation animation should be displayed. Default is 30.
-- `--scalefactor [n]`: A multiplier by which to scale the image output (helps to scale down large maze sizes or scale up small maze sizes). Default is 4.
+- `--scalefactor [n]`: A multiplier by which to scale the image output (helps to scale down large maze sizes or scale up small maze sizes). Default is 4. Take careful note that the solving Python script only works with mazes exported using a scale factor of 4.
 
 Once open, the maze generation algorithms may be cycled using the arrow keys. In order to generate a maze without an animation, press F5. In order to generate a maze with an animation, press F6. To Export the generated maze as an image file (placed in your home directory/mazes), press 'X'.
 
