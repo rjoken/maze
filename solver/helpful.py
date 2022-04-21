@@ -34,5 +34,5 @@ def hamming_weight(n):
 	
 def usage_and_exit():
 	# prints the usage of this program, then exits
-	print("Usage: solve.py -i <inputfile>")
+	print("Usage: solve.py -i <inputfile>\nOptional: -h (help), -m (don't print maze structure), -o <filename> (output statistics to text file)")
 	sys.exit()

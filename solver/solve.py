@@ -57,11 +57,12 @@ def create_solved_image(img, path, inputfile, maze, debug):
 def main(argv):
 	debug = False
 	output = False
+	showmaze = True
 	inputfile = "" # file path for input image
 	outputfile = "" # file path for statistical output
 	try:
 		# possible arguments are -h (help, optional), -d (debug, optional), i- filename (input filename)
-		opts, args = getopt.getopt(argv,"hdi:o:", ["ifile=", "output="])
+		opts, args = getopt.getopt(argv,"mhdi:o:", ["ifile=", "output="])
 	except getopt.GetoptError:
 		usage_and_exit()
 		
@@ -69,6 +70,8 @@ def main(argv):
 	required_options = RequiredOptions([ 'ifile' ])
 	
 	for opt, arg in opts:
+		if opt in ("-m"):
+			showmaze = False
 		if opt in ("-h"):
 			usage_and_exit()
 		if opt in ("-d"):
@@ -180,7 +183,7 @@ def main(argv):
 	if(output):
 		outfile.write(str(maze.get_junctions()) + ",")
 	
-	if(debug):
+	if(showmaze):
 		maze.print_maze()
 	
 	print("\nCalculating best path...")
