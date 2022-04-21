@@ -382,6 +382,10 @@ class Maze {
      * Maze generation based on the Aldous-Broder algorithm (random walk)
      */
     void ab() {
+        if(rows > 10 && cols > 10) {
+            System.out.println("INFO: An Aldous-Broder generation cannot be animated with more than 10 rows/cols due to its runtime flaws. " +
+                    "\nThis algorithm is for demonstration purposes only.");
+        }
         currentRow = rng.nextInt(rows);
         currentCol = rng.nextInt(cols);
         matrix[currentRow][currentCol][4] = 1;
@@ -461,7 +465,8 @@ class Maze {
                 }
                 matrix[currentRow][currentCol][4] = 1;
             }
-            if(animate) {
+            // restrict animation because this algorithm is terrible
+            if(animate && rows < 10 && cols < 10) {
                 frames.add(generateFrame(currentRow, currentCol));
             }
         }
