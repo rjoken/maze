@@ -554,33 +554,33 @@ class Maze {
                     }
                 } else if (borderCells.contains(p) || stack.contains(p)) {
                     for (int k = 1; k < cellSize - 1; k++) {
-                        // colour all except the outer 10 pixels of this cell GREEN
+                        // colour all except the outer 10 pixels of this cell LIGHT BLUE
                         for (int m = 1; m < cellSize - 1; m++) {
-                            writer.setColor(cellSize * col + k + 1, cellSize * row + m + 1, Color.GREEN);
+                            writer.setColor(cellSize * col + k + 1, cellSize * row + m + 1, Color.CYAN);
                         }
 
                         if (cellData[0] == 1) {
-                            // if left connection, set leftmost pixels to GREEN
+                            // if left connection, set leftmost pixels to LIGHT BLUE
                             for (int m = 1; m < cellSize - 1; m++) {
-                                writer.setColor(cellSize * col + 1, cellSize * row + m + 1, Color.GREEN);
+                                writer.setColor(cellSize * col + 1, cellSize * row + m + 1, Color.CYAN);
                             }
                         }
                         if (cellData[1] == 1) {
-                            // if right connection, set rightmost pixels to GREEN
+                            // if right connection, set rightmost pixels to LIGHT BLUE
                             for (int m = 1; m < cellSize - 1; m++) {
-                                writer.setColor(cellSize * col + (cellSize - 1) + 1, cellSize * row + m + 1, Color.GREEN);
+                                writer.setColor(cellSize * col + (cellSize - 1) + 1, cellSize * row + m + 1, Color.CYAN);
                             }
                         }
                         if (cellData[2] == 1) {
-                            // if up connection, set topmost pixels to GREEN
+                            // if up connection, set topmost pixels to LIGHT BLUE
                             for (int m = 1; m < cellSize - 1; m++) {
-                                writer.setColor(cellSize * col + m + 1, cellSize * row + 1, Color.GREEN);
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + 1, Color.CYAN);
                             }
                         }
                         if (cellData[3] == 1) {
-                            // if down connection, set bottommost pixels to GREEN
+                            // if down connection, set bottommost pixels to LIGHT BLUE
                             for (int m = 1; m < cellSize - 1; m++) {
-                                writer.setColor(cellSize * col + m + 1, cellSize * row + (cellSize - 1) + 1, Color.GREEN);
+                                writer.setColor(cellSize * col + m + 1, cellSize * row + (cellSize - 1) + 1, Color.CYAN);
                             }
                         }
 
