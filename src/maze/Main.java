@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Main extends Application {
-    private static int fps = 60;
+    private static int fps = 30;
     private static int rows = 20;
     private static int cols = 20;
     static final int cellSize = 4;
