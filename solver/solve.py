@@ -194,7 +194,8 @@ def main(argv):
 	print("Done in % f seconds\n" % time_diff)
 	if(output):
 		outfile.write(str(time_diff) + ",")
-	print("Dijkstra path: % s\n" % str(dijkstra_path))
+		outfile.write(str(len(dijkstra_path)) + ",")
+	print("Dijkstra path: % s\nLength: % s" % (str(dijkstra_path), str(len(dijkstra_path))))
 	
 	if(debug):
 		maze.print_connections()
