@@ -12,9 +12,9 @@ The five algorithms included are:
 ### Using the Maze Generation Software
 The maze generation software requires Java to be installed on the target machine on which it is to be run. A compiled JAR file can be obtained from the [Releases Page](https://github.com/rjoken/maze/releases). The current version is v1.0.3.
 
-The source has been tested and built using IntelliJ IDEA 2018.3.4.
+The source has been tested and built using IntelliJ IDEA 2018.3.4, and Java version 8
 
-The JAR file may be run using the following command, provided that Java is installed on the target machine:
+The JAR file may be run using the following command, provided that [Java 8](https://java.com/en/download/) is installed on the target machine:
 `java -jar PATH-TO-MAZE.JAR`
 
 The Java executable supports a variety of runtime arguments:
